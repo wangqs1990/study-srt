@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { render } from 'react-dom';
-import { search, searchNext } from './utils/subtitle';
+import { search, searchNext, getSrtData } from './utils/subtitle';
 import { HashRouter, Route } from 'react-router-dom';
 import Video from './components/video';
 import { parseSync } from 'subtitle';
+import './index.css';
 
 const PlayVideo = () => {
     const [url, setUrl] = useState('');
@@ -23,7 +24,6 @@ const PlayVideo = () => {
             const reader = new FileReader();
             reader.readAsArrayBuffer(files[0]);
             reader.onload = e => {
-                debugger
                 const subs = parseSync(new TextDecoder().decode(reader.result) || []);
                 if (player.current) {
                     setStIndex(search(subs, player.current.currentTime()));
@@ -36,14 +36,14 @@ const PlayVideo = () => {
     const handleNext = (e) => {
         let next = stIndex + 1;
         if (subs && player.current && next < subs.length) {
-            player.current.currentTime(subs[next].start / 1000 - 0.05);
+            player.current.currentTime(getSrtData(subs[next]).start / 1000 - 0.05);
         }
     }
 
     const handlePrev = (e) => {
         let next = stIndex - 1;
         if (subs && player.current && next > 0) {
-            player.current.currentTime(subs[next].start / 1000 - 0.05);
+            player.current.currentTime(getSrtData(subs[next]).start / 1000 - 0.05);
         }
     }
 
@@ -51,6 +51,7 @@ const PlayVideo = () => {
         if (player.current && subs) {
             let stIndex = search(subs, player.current.currentTime());
             setStIndex(stIndex);
+            player.current.off('timeupdate');
             player.current.on('timeupdate', () => {
                 const next = searchNext(subs, player.current.currentTime(), stIndex);
                 if (next !== stIndex) {
@@ -89,19 +90,10 @@ const PlayVideo = () => {
     )
 }
 
-const Content = () => {
-    const [state, setState] = useState('');
-
-return <div style={{width: '500px', height: '500px', border: '1px solid black'}} contentEditable onCompositionEnd={e => {
-    setState(state + e.data);
-}}>{state}</div>;
-}
-
 const App = () => {
     return  (
         <HashRouter>
             <Route component={PlayVideo} path="/" exact />
-            <Route component={Content} path="/content" exact />
         </HashRouter>
     );
 };
